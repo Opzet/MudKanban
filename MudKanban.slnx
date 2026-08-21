@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MudKanban.Demo/MudKanban.Demo.csproj" />
+    <Project Path="src/MudKanban.Tests/MudKanban.Tests.csproj" />
+    <Project Path="src/MudKanban/MudKanban.csproj" />
+  </Folder>
+</Solution>
