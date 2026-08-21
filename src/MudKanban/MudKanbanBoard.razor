@@ -1,0 +1,79 @@
+@inherits MudKanbanBoardBase
+
+<div class="mud-kanban-board">
+    @foreach (var column in Columns.OrderBy(c => c.Order))
+    {
+        var columnCards = Cards.Where(c => c.ColumnId == column.Id).OrderBy(c => c.Order).ToList();
+        var isOverLimit = column.WipLimit.HasValue && columnCards.Count > column.WipLimit.Value;
+
+        <div class="mud-kanban-column @(isOverLimit ? "mud-kanban-column--over-limit" : "")">
+            <div class="mud-kanban-column-header">
+                <MudText Typo="Typo.h6" Class="mud-kanban-column-title">@column.Title</MudText>
+                @if (column.WipLimit.HasValue)
+                {
+                    <MudChip T="string" Color="@(isOverLimit ? Color.Error : Color.Default)" Size="Size.Small">
+                        @columnCards.Count / @column.WipLimit
+                    </MudChip>
+                }
+            </div>
+
+            <div class="mud-kanban-cards"
+                 @ondragover="HandleDragOver"
+                 @ondragover:preventDefault="true"
+                 @ondrop="@(() => HandleDrop(column.Id))">
+
+                @foreach (var card in columnCards)
+                {
+                    <div class="mud-kanban-card @GetPriorityClass(card.Priority)"
+                         draggable="true"
+                         @ondragstart="@(() => HandleDragStart(card))">
+
+                        @if (CardTemplate != null)
+                        {
+                            @CardTemplate(card)
+                        }
+                        else
+                        {
+                            <MudCard Elevation="2">
+                                <MudCardHeader>
+                                    <CardHeaderContent>
+                                        <MudText Typo="Typo.subtitle1">@card.Title</MudText>
+                                    </CardHeaderContent>
+                                    <CardHeaderActions>
+                                        <MudIcon Icon="@GetPriorityIcon(card.Priority)"
+                                                 Color="@GetPriorityColor(card.Priority)"
+                                                 Size="Size.Small" />
+                                    </CardHeaderActions>
+                                </MudCardHeader>
+                                @if (!string.IsNullOrEmpty(card.Description))
+                                {
+                                    <MudCardContent>
+                                        <MudText Typo="Typo.body2">@card.Description</MudText>
+                                    </MudCardContent>
+                                }
+                                @if (!string.IsNullOrEmpty(card.Assignee) || card.DueDate.HasValue)
+                                {
+                                    <MudCardContent Class="mud-kanban-card-footer">
+                                        @if (!string.IsNullOrEmpty(card.Assignee))
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Person">
+                                                @card.Assignee
+                                            </MudChip>
+                                        }
+                                        @if (card.DueDate.HasValue)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.CalendarToday"
+                                                     Color="@(card.DueDate < DateTimeOffset.Now ? Color.Error : Color.Default)">
+                                                @card.DueDate.Value.ToString("MMM d")
+                                            </MudChip>
+                                        }
+                                    </MudCardContent>
+                                }
+                            </MudCard>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
