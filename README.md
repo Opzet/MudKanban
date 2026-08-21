@@ -196,7 +196,7 @@ builder.Services.AddMudServices();
 ## CI/CD
 
 - **Build & Test** — runs on every push to `main` and on pull requests.
-- **Publish NuGet** — triggered when a GitHub Release is published; requires a `NUGET_API_KEY` repository secret.
+- **Publish NuGet** — triggered when a GitHub Release is published; uses NuGet trusted publishing (OIDC) with `NuGet/login@v1` and requires a `NUGET_USER` repository secret (nuget.org profile name).
 ---
 
 ## WIP Limit Example

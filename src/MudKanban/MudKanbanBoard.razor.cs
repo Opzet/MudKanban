@@ -10,6 +10,8 @@ namespace MudKanban;
 public class MudKanbanBoardBase : ComponentBase
 {
     private KanbanCard? _draggedCard;
+    private Guid? _dragOverColumnId;
+    private int? _dragOverIndex;
 
     /// <summary>Columns (lanes) displayed on the board.</summary>
     [Parameter]
@@ -34,11 +36,23 @@ public class MudKanbanBoardBase : ComponentBase
     [Parameter]
     public EventCallback<KanbanCardMovedEventArgs> OnCardMoved { get; set; }
 
+    /// <summary>True when any card is currently being dragged.</summary>
+    protected bool IsDragging => _draggedCard is not null;
+
     /// <summary>Starts dragging a specific card.</summary>
     protected void HandleDragStart(KanbanCard card)
     {
         ArgumentNullException.ThrowIfNull(card);
+
         _draggedCard = card;
+        _dragOverColumnId = card.ColumnId;
+        _dragOverIndex = card.Order;
+    }
+
+    /// <summary>Ends dragging and clears visual drag state.</summary>
+    protected void HandleDragEnd()
+    {
+        ResetDragState();
     }
 
     /// <summary>Keeps drop targets active while dragging.</summary>
@@ -47,57 +61,125 @@ public class MudKanbanBoardBase : ComponentBase
         // Needed to allow drop; default prevented in markup.
     }
 
-    /// <summary>Drops the currently dragged card to the target column.</summary>
-    protected async Task HandleDrop(Guid targetColumnId)
+    /// <summary>Tracks the active drop zone index while dragging over a column.</summary>
+    protected void HandleDropZoneEnter(Guid columnId, int index)
     {
-        if (_draggedCard is null || _draggedCard.ColumnId == targetColumnId)
+        if (_draggedCard is null)
         {
-            _draggedCard = null;
             return;
         }
 
-        var draggedCardId = _draggedCard.Id;
-        var sourceColumnId = _draggedCard.ColumnId;
+        _dragOverColumnId = columnId;
+        _dragOverIndex = index;
+    }
 
-        var sourceCards = Cards
-            .Where(c => c.ColumnId == sourceColumnId)
-            .OrderBy(c => c.Order)
-            .ToList();
-        sourceCards.RemoveAll(c => c.Id == draggedCardId);
-        for (var i = 0; i < sourceCards.Count; i++)
+    /// <summary>Whether a specific drop zone should display the drag skeleton preview.</summary>
+    protected bool IsDropZoneActive(Guid columnId, int index)
+    {
+        return _draggedCard is not null &&
+               _dragOverColumnId == columnId &&
+               _dragOverIndex == index;
+    }
+
+    /// <summary>Whether the given column is the current active drop target.</summary>
+    protected bool IsColumnDropTarget(Guid columnId)
+    {
+        return _draggedCard is not null && _dragOverColumnId == columnId;
+    }
+
+    /// <summary>Whether a card should visually bump to make space for the active drop position.</summary>
+    protected bool IsCardBumped(Guid columnId, int cardIndex)
+    {
+        if (_draggedCard is null || _dragOverColumnId != columnId || _dragOverIndex is null)
         {
-            sourceCards[i].Order = i;
+            return false;
         }
 
-        var targetCards = Cards
-            .Where(c => c.ColumnId == targetColumnId && c.Id != draggedCardId)
+        return cardIndex >= _dragOverIndex.Value;
+    }
+
+    /// <summary>Returns cards for a column while hiding the currently dragged card from its source lane.</summary>
+    protected IReadOnlyList<KanbanCard> GetRenderableCards(Guid columnId)
+    {
+        var cards = Cards
+            .Where(c => c.ColumnId == columnId)
             .OrderBy(c => c.Order)
             .ToList();
 
-        var movedCard = Cards.First(c => c.Id == draggedCardId);
-        movedCard.ColumnId = targetColumnId;
-        targetCards.Add(movedCard);
-
-        for (var i = 0; i < targetCards.Count; i++)
+        if (_draggedCard is null)
         {
-            targetCards[i].Order = i;
+            return cards;
+        }
+
+        cards.RemoveAll(c => c.Id == _draggedCard.Id);
+        return cards;
+    }
+
+    /// <summary>Drops the currently dragged card to the target column and index.</summary>
+    protected async Task HandleDrop(Guid targetColumnId, int targetIndex)
+    {
+        if (_draggedCard is null)
+        {
+            ResetDragState();
+            return;
+        }
+
+        var movedCard = _draggedCard;
+        var movedCardId = movedCard.Id;
+        var sourceColumnId = movedCard.ColumnId;
+
+        var cardsByColumn = Cards
+            .Where(c => c.Id != movedCardId)
+            .GroupBy(c => c.ColumnId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(card => card.Order).ToList());
+
+        if (!cardsByColumn.TryGetValue(targetColumnId, out var targetCards))
+        {
+            targetCards = [];
+            cardsByColumn[targetColumnId] = targetCards;
+        }
+
+        var boundedIndex = Math.Clamp(targetIndex, 0, targetCards.Count);
+
+        movedCard.ColumnId = targetColumnId;
+        targetCards.Insert(boundedIndex, movedCard);
+
+        foreach (var cardList in cardsByColumn.Values)
+        {
+            for (var i = 0; i < cardList.Count; i++)
+            {
+                cardList[i].Order = i;
+            }
         }
 
         var updatedCards = Cards
-            .Select(c => c.Id == draggedCardId
-                ? movedCard
-                : c)
+            .Select(card => card.Id == movedCardId ? movedCard : card)
             .ToList();
 
         await CardsChanged.InvokeAsync(updatedCards);
         await OnCardMoved.InvokeAsync(new KanbanCardMovedEventArgs
         {
-            CardId = draggedCardId,
+            CardId = movedCardId,
             SourceColumnId = sourceColumnId,
             TargetColumnId = targetColumnId,
-            NewIndex = targetCards.Count - 1
+            NewIndex = boundedIndex
         });
 
+        ResetDragState();
+    }
+
+    /// <summary>Whether a given card is currently being dragged.</summary>
+    protected bool IsDraggedCard(Guid cardId)
+    {
+        return _draggedCard?.Id == cardId;
+    }
+
+    private void ResetDragState()
+    {
         _draggedCard = null;
+        _dragOverColumnId = null;
+        _dragOverIndex = null;
     }
 }

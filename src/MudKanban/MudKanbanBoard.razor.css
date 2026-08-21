@@ -1,81 +1,179 @@
 .mud-kanban-board {
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    gap: 18px;
     overflow-x: auto;
+    align-items: flex-start;
     padding: 16px;
-    min-height: 400px;
+    min-height: 460px;
+    scroll-snap-type: x proximity;
 }
 
 .mud-kanban-column {
     display: flex;
     flex-direction: column;
-    min-width: 280px;
-    max-width: 320px;
-    background-color: var(--mud-palette-background-grey);
-    border-radius: 8px;
-    padding: 8px;
-    gap: 8px;
+    min-width: 308px;
+    max-width: 352px;
+    gap: 10px;
+    border-radius: 14px;
+    background: linear-gradient(
+        180deg,
+        rgba(var(--mud-palette-surface-rgb), 0.94) 0%,
+        rgba(var(--mud-palette-background-rgb), 0.98) 100%);
+    padding: 10px;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+    scroll-snap-align: start;
+}
+
+.mud-kanban-column--drag-active {
+    border-color: rgba(var(--mud-palette-primary-rgb), 0.18);
+}
+
+.mud-kanban-column--drop-focus {
+    border-color: rgba(var(--mud-palette-primary-rgb), 0.45);
+    box-shadow: 0 10px 28px rgba(var(--mud-palette-primary-rgb), 0.17);
+    transform: translateY(-1px);
 }
 
 .mud-kanban-column--over-limit {
-    border: 2px solid var(--mud-palette-error);
+    border-color: rgba(var(--mud-palette-error-rgb), 0.6);
+    box-shadow: 0 0 0 1px rgba(var(--mud-palette-error-rgb), 0.24), 0 10px 28px rgba(var(--mud-palette-error-rgb), 0.11);
 }
 
 .mud-kanban-column-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 4px 8px 4px;
-    border-bottom: 1px solid var(--mud-palette-lines-default);
-    margin-bottom: 4px;
+    padding: 6px 6px 10px 6px;
+    border-bottom: 1px solid rgba(var(--mud-palette-lines-default-rgb), 0.6);
+    gap: 8px;
+}
+
+.mud-kanban-column-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
 }
 
 .mud-kanban-column-title {
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.2px;
 }
 
 .mud-kanban-cards {
     display: flex;
     flex-direction: column;
-    gap: 8px;
     flex: 1;
-    min-height: 80px;
-    padding: 4px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
+    min-height: 140px;
+    padding: 2px;
+    border-radius: 10px;
+    transition: background-color 0.12s ease, box-shadow 0.16s ease;
 }
 
 .mud-kanban-cards:hover {
-    background-color: var(--mud-palette-action-hover);
+    background-color: rgba(var(--mud-palette-action-default-rgb), 0.028);
+}
+
+.mud-kanban-cards--active {
+    background-color: rgba(var(--mud-palette-primary-rgb), 0.05);
+    box-shadow: inset 0 0 0 1px rgba(var(--mud-palette-primary-rgb), 0.16);
+}
+
+.mud-kanban-drop-zone {
+    min-height: 10px;
+    border-radius: 10px;
+    transition: min-height 0.14s ease, margin 0.14s ease, background-color 0.14s ease;
+}
+
+.mud-kanban-drop-zone--active {
+    min-height: 84px;
+    margin: 6px 0;
+    background: linear-gradient(
+        180deg,
+        rgba(var(--mud-palette-primary-rgb), 0.09) 0%,
+        rgba(var(--mud-palette-primary-rgb), 0.04) 100%);
+}
+
+.mud-kanban-drop-skeleton {
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-style: dashed;
+    border-width: 2px;
+    border-color: rgba(var(--mud-palette-primary-rgb), 0.42);
+    background-color: rgba(var(--mud-palette-surface-rgb), 0.9);
+    animation: mud-kanban-drop-pulse 1.1s ease-in-out infinite;
+}
+
+.mud-kanban-drop-skeleton-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2px;
 }
 
 .mud-kanban-card {
     cursor: grab;
-    border-radius: 4px;
-    transition: box-shadow 0.2s ease, opacity 0.2s ease;
+    border-radius: 10px;
+    transition: transform 0.14s ease, opacity 0.14s ease, filter 0.14s ease;
+    transform-origin: center;
 }
 
 .mud-kanban-card:active {
     cursor: grabbing;
-    opacity: 0.8;
 }
 
-.mud-kanban-card--critical {
-    border-left: 4px solid var(--mud-palette-error);
+.mud-kanban-card--dragging {
+    opacity: 0.3;
+    transform: scale(0.975);
+    filter: saturate(0.85);
 }
 
-.mud-kanban-card--high {
-    border-left: 4px solid var(--mud-palette-warning);
+.mud-kanban-card--bumped {
+    transform: translateY(7px) scale(0.995);
 }
 
-.mud-kanban-card--low {
-    border-left: 4px solid var(--mud-palette-info);
+.mud-kanban-card-inner {
+    border-radius: 10px;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.mud-kanban-card-inner:hover {
+    box-shadow: var(--mud-elevation-6) !important;
+    transform: translateY(-2px) scale(1.01);
+}
+
+.mud-kanban-drag-icon {
+    opacity: 0.6;
+}
+
+.mud-kanban-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .mud-kanban-card-footer {
-    display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    padding-top: 0;
+}
+
+.mud-kanban-empty-state {
+    margin-top: 6px;
+}
+
+@keyframes mud-kanban-drop-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--mud-palette-primary-rgb), 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(var(--mud-palette-primary-rgb), 0.04);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(var(--mud-palette-primary-rgb), 0.2);
+    }
 }

@@ -1,14 +1,23 @@
 @inherits MudKanbanBoardBase
 
-<div class="mud-kanban-board">
+<div class="mud-kanban-board" role="list">
     @foreach (var column in Columns.OrderBy(c => c.Order))
     {
         var columnCards = Cards.Where(c => c.ColumnId == column.Id).OrderBy(c => c.Order).ToList();
+        var renderableCards = GetRenderableCards(column.Id);
         var isOverLimit = column.WipLimit.HasValue && columnCards.Count > column.WipLimit.Value;
 
-        <div class="mud-kanban-column @(isOverLimit ? "mud-kanban-column--over-limit" : "")">
+        var isActiveDropColumn = IsColumnDropTarget(column.Id);
+
+        <MudPaper Class="@($"mud-kanban-column {(isOverLimit ? "mud-kanban-column--over-limit" : string.Empty)} {(IsDragging ? "mud-kanban-column--drag-active" : string.Empty)} {(isActiveDropColumn ? "mud-kanban-column--drop-focus" : string.Empty)}")" Outlined="true" Elevation="0">
             <div class="mud-kanban-column-header">
-                <MudText Typo="Typo.h6" Class="mud-kanban-column-title">@column.Title</MudText>
+                <div class="mud-kanban-column-title-wrap">
+                    <MudText Typo="Typo.h6" Class="mud-kanban-column-title">@column.Title</MudText>
+                    <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Outlined">
+                        @columnCards.Count items
+                    </MudChip>
+                </div>
+
                 @if (column.WipLimit.HasValue)
                 {
                     <MudChip T="string" Color="@(isOverLimit ? Color.Error : Color.Default)" Size="Size.Small">
@@ -17,52 +26,96 @@
                 }
             </div>
 
-            <div class="mud-kanban-cards"
+            <div class="@($"mud-kanban-cards {(isActiveDropColumn ? "mud-kanban-cards--active" : string.Empty)}")"
                  @ondragover="HandleDragOver"
                  @ondragover:preventDefault="true"
-                 @ondrop="@(() => HandleDrop(column.Id))">
-
-                @foreach (var card in columnCards)
+                 @ondrop="@(() => HandleDrop(column.Id, renderableCards.Count))">
+                @for (var index = 0; index <= renderableCards.Count; index++)
                 {
-                    <div class="mud-kanban-card"
-                         draggable="true"
-                         @ondragstart="@(() => HandleDragStart(card))">
+                    var isDropZoneActive = IsDropZoneActive(column.Id, index);
 
-                        @if (CardTemplate != null)
+                    <div class="@($"mud-kanban-drop-zone {(isDropZoneActive ? "mud-kanban-drop-zone--active" : string.Empty)}")"
+                         @ondragenter="@(() => HandleDropZoneEnter(column.Id, index))"
+                         @ondragenter:preventDefault="true"
+                         @ondragover="HandleDragOver"
+                         @ondragover:preventDefault="true"
+                         @ondrop="@(() => HandleDrop(column.Id, index))">
+                        @if (isDropZoneActive)
                         {
-                            @CardTemplate(card)
-                        }
-                        else
-                        {
-                            <MudCard Elevation="2" Class="@($"mud-kanban-card-inner border-l-4 border-{card.Color}")">
-                                <MudCardContent Class="pa-2">
-                                    <MudText Typo="Typo.subtitle2" Class="mud-text-truncate">@card.Title</MudText>
-                                    @if (!string.IsNullOrWhiteSpace(card.Description))
-                                    {
-                                        <MudText Typo="Typo.body2" Class="mt-1 mud-text-secondary">@card.Description</MudText>
-                                    }
-                                    <div class="d-flex align-center gap-2 mt-2">
-                                        @if (!string.IsNullOrWhiteSpace(card.Assignee))
-                                        {
-                                            <MudChip T="string" Size="Size.Small" Color="Color.Default"
-                                                     Icon="@Icons.Material.Filled.Person">@card.Assignee</MudChip>
-                                        }
-                                        @if (card.DueDate.HasValue)
-                                        {
-                                            var overdue = card.DueDate.Value.Date < DateTime.Today;
-                                            <MudChip T="string" Size="Size.Small"
-                                                     Color="@(overdue ? Color.Error : Color.Default)"
-                                                     Icon="@Icons.Material.Filled.CalendarToday">
-                                                @card.DueDate.Value.ToString("MMM d")
-                                            </MudChip>
-                                        }
-                                    </div>
-                                </MudCardContent>
-                            </MudCard>
+                            <MudPaper Class="mud-kanban-drop-skeleton" Outlined="true" Elevation="0">
+                                <div class="mud-kanban-drop-skeleton-head">
+                                    <MudIcon Icon="@Icons.Material.Filled.AddCircleOutline" Size="Size.Small" Color="Color.Primary" />
+                                    <MudText Typo="Typo.caption" Color="Color.Primary">Drop card here</MudText>
+                                </div>
+                                <MudSkeleton Height="16px" Width="70%" SkeletonType="SkeletonType.Text" />
+                                <MudSkeleton Height="12px" Width="90%" SkeletonType="SkeletonType.Text" />
+                                <MudSkeleton Height="12px" Width="40%" SkeletonType="SkeletonType.Text" />
+                            </MudPaper>
                         }
                     </div>
+
+                    @if (index < renderableCards.Count)
+                    {
+                        var card = renderableCards[index];
+
+                        <div class="@($"mud-kanban-card {(IsDraggedCard(card.Id) ? "mud-kanban-card--dragging" : string.Empty)} {(IsCardBumped(column.Id, index) ? "mud-kanban-card--bumped" : string.Empty)}")"
+                             role="listitem"
+                             draggable="true"
+                             @ondragstart="@(() => HandleDragStart(card))"
+                             @ondragenter="@(() => HandleDropZoneEnter(column.Id, index))"
+                             @ondragenter:preventDefault="true"
+                             @ondragover="HandleDragOver"
+                             @ondragover:preventDefault="true"
+                             @ondrop="@(() => HandleDrop(column.Id, index))"
+                             @ondragend="HandleDragEnd">
+
+                            @if (CardTemplate != null)
+                            {
+                                @CardTemplate(card)
+                            }
+                            else
+                            {
+                                <MudCard Elevation="1" Class="@($"mud-kanban-card-inner border-l-4 border-{card.Color}")">
+                                    <MudCardContent Class="pa-3">
+                                        <div class="d-flex align-start justify-space-between gap-2">
+                                            <MudText Typo="Typo.subtitle2" Class="mud-text-truncate">@card.Title</MudText>
+                                            <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Size="Size.Small" Class="mud-kanban-drag-icon" />
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(card.Description))
+                                        {
+                                            <MudText Typo="Typo.body2" Class="mt-1 mud-text-secondary mud-kanban-description">@card.Description</MudText>
+                                        }
+                                        <div class="d-flex align-center gap-2 mt-3 mud-kanban-card-footer">
+                                            @if (!string.IsNullOrWhiteSpace(card.Assignee))
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Default"
+                                                         Icon="@Icons.Material.Filled.Person">@card.Assignee</MudChip>
+                                            }
+                                            @if (card.DueDate.HasValue)
+                                            {
+                                                var overdue = card.DueDate.Value.Date < DateTime.Today;
+                                                <MudChip T="string" Size="Size.Small"
+                                                         Color="@(overdue ? Color.Error : Color.Default)"
+                                                         Variant="@(overdue ? Variant.Filled : Variant.Outlined)"
+                                                         Icon="@Icons.Material.Filled.CalendarToday">
+                                                    @card.DueDate.Value.ToString("MMM d")
+                                                </MudChip>
+                                            }
+                                        </div>
+                                    </MudCardContent>
+                                </MudCard>
+                            }
+                        </div>
+                    }
+                }
+
+                @if (renderableCards.Count == 0 && !IsDragging)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Text" Class="mud-kanban-empty-state">
+                        Drop cards here
+                    </MudAlert>
                 }
             </div>
-        </div>
+        </MudPaper>
     }
 </div>
