@@ -1,5 +1,6 @@
-@using MudKanban.Models
 @using MudBlazor
+@using KanbanCardModel = MudKanban.Models.KanbanCard
+@using KanbanColumnModel = MudKanban.Models.KanbanColumn
 
 <div class="mud-kanban-column d-flex flex-column"
      @ondragover:preventDefault="true"
@@ -50,10 +51,10 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public KanbanColumn Column { get; set; } = default!;
-    [Parameter] public List<KanbanCard> Cards { get; set; } = new();
-    [Parameter] public RenderFragment<KanbanCard>? CardTemplate { get; set; }
-    [Parameter] public EventCallback<KanbanCard> OnCardDragStart { get; set; }
+    [Parameter, EditorRequired] public KanbanColumnModel Column { get; set; } = default!;
+    [Parameter] public List<KanbanCardModel> Cards { get; set; } = new();
+    [Parameter] public RenderFragment<KanbanCardModel>? CardTemplate { get; set; }
+    [Parameter] public EventCallback<KanbanCardModel> OnCardDragStart { get; set; }
     [Parameter] public EventCallback<(Guid ColumnId, int Index)> OnDrop { get; set; }
 
     private bool WipExceeded =>

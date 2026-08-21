@@ -1,5 +1,8 @@
 @page "/"
 @rendermode InteractiveServer
+@using KanbanCardModel = MudKanban.Models.KanbanCard
+@using KanbanCardMovedEventArgsModel = MudKanban.Models.KanbanCardMovedEventArgs
+@using KanbanColumnModel = MudKanban.Models.KanbanColumn
 
 <PageTitle>MudKanban Demo</PageTitle>
 
@@ -20,28 +23,32 @@
 @code {
     private string? _lastEvent;
 
-    private IReadOnlyList<KanbanColumn> _columns =
-    [
-        new KanbanColumn { Id = "backlog",     Title = "Backlog",     Order = 0 },
-        new KanbanColumn { Id = "todo",        Title = "To Do",       Order = 1, WipLimit = 3 },
-        new KanbanColumn { Id = "inprogress",  Title = "In Progress", Order = 2, WipLimit = 2 },
-        new KanbanColumn { Id = "review",      Title = "Review",      Order = 3, WipLimit = 2 },
-        new KanbanColumn { Id = "done",        Title = "Done",        Order = 4 },
-    ];
+    private readonly KanbanColumnModel _backlog = new() { Title = "Backlog", Order = 0 };
+    private readonly KanbanColumnModel _todo = new() { Title = "To Do", Order = 1, WipLimit = 3 };
+    private readonly KanbanColumnModel _inProgress = new() { Title = "In Progress", Order = 2, WipLimit = 2 };
+    private readonly KanbanColumnModel _review = new() { Title = "Review", Order = 3, WipLimit = 2 };
+    private readonly KanbanColumnModel _done = new() { Title = "Done", Order = 4 };
 
-    private IReadOnlyList<KanbanCard> _cards =
-    [
-        new KanbanCard { Title = "Design system setup",   ColumnId = "done",       Order = 0, Priority = KanbanPriority.Normal },
-        new KanbanCard { Title = "API integration",       ColumnId = "inprogress", Order = 0, Priority = KanbanPriority.High, Assignee = "Alice", DueDate = DateTimeOffset.Now.AddDays(2) },
-        new KanbanCard { Title = "Write unit tests",      ColumnId = "todo",       Order = 0, Priority = KanbanPriority.Normal, Assignee = "Bob" },
-        new KanbanCard { Title = "Fix login bug",         ColumnId = "review",     Order = 0, Priority = KanbanPriority.Critical, DueDate = DateTimeOffset.Now.AddDays(-1) },
-        new KanbanCard { Title = "Accessibility audit",   ColumnId = "backlog",    Order = 0, Priority = KanbanPriority.Low },
-        new KanbanCard { Title = "Performance profiling", ColumnId = "backlog",    Order = 1, Priority = KanbanPriority.Normal },
-        new KanbanCard { Title = "Release notes",         ColumnId = "todo",       Order = 1, Priority = KanbanPriority.Low },
-    ];
+    private IReadOnlyList<KanbanColumnModel> _columns = [];
+    private IReadOnlyList<KanbanCardModel> _cards = [];
 
-    private void OnCardMoved(KanbanCardMovedEventArgs args)
+    protected override void OnInitialized()
     {
-        _lastEvent = $"Card \"{args.Card.Title}\" moved from \"{args.FromColumnId}\" to \"{args.ToColumnId}\"";
+        _columns = [_backlog, _todo, _inProgress, _review, _done];
+        _cards =
+        [
+            new KanbanCardModel { Title = "Design system setup",   ColumnId = _done.Id,       Order = 0, Color = "default" },
+            new KanbanCardModel { Title = "API integration",       ColumnId = _inProgress.Id, Order = 0, Color = "warning", Assignee = "Alice", DueDate = DateTime.Today.AddDays(2) },
+            new KanbanCardModel { Title = "Write unit tests",      ColumnId = _todo.Id,       Order = 0, Color = "info", Assignee = "Bob" },
+            new KanbanCardModel { Title = "Fix login bug",         ColumnId = _review.Id,     Order = 0, Color = "error", DueDate = DateTime.Today.AddDays(-1) },
+            new KanbanCardModel { Title = "Accessibility audit",   ColumnId = _backlog.Id,    Order = 0, Color = "secondary" },
+            new KanbanCardModel { Title = "Performance profiling", ColumnId = _backlog.Id,    Order = 1, Color = "default" },
+            new KanbanCardModel { Title = "Release notes",         ColumnId = _todo.Id,       Order = 1, Color = "success" },
+        ];
+    }
+
+    private void OnCardMoved(KanbanCardMovedEventArgsModel args)
+    {
+        _lastEvent = $"Card {args.CardId} moved from {args.SourceColumnId} to {args.TargetColumnId} at index {args.NewIndex}.";
     }
 }

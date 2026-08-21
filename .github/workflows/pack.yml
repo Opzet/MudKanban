@@ -1,0 +1,32 @@
+name: pack
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore src/MudKanban/MudKanban.csproj
+
+      - name: Pack
+        run: dotnet pack src/MudKanban/MudKanban.csproj --configuration Release --no-restore --output artifacts
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: mudkanban-packages
+          path: artifacts/*.nupkg

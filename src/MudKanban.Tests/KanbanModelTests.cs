@@ -1,5 +1,7 @@
-using MudKanban.Models;
 using Xunit;
+using KanbanCardModel = MudKanban.Models.KanbanCard;
+using KanbanCardMovedEventArgsModel = MudKanban.Models.KanbanCardMovedEventArgs;
+using KanbanColumnModel = MudKanban.Models.KanbanColumn;
 
 namespace MudKanban.Tests;
 
@@ -8,7 +10,7 @@ public class KanbanModelTests
     [Fact]
     public void KanbanCard_DefaultValues_AreValid()
     {
-        var card = new KanbanCard();
+        var card = new KanbanCardModel();
         Assert.NotEqual(Guid.Empty, card.Id);
         Assert.Equal(string.Empty, card.Title);
         Assert.Equal("default", card.Color);
@@ -19,7 +21,7 @@ public class KanbanModelTests
     [Fact]
     public void KanbanColumn_DefaultValues_AreValid()
     {
-        var col = new KanbanColumn();
+        var col = new KanbanColumnModel();
         Assert.NotEqual(Guid.Empty, col.Id);
         Assert.Equal(string.Empty, col.Title);
         Assert.Null(col.WipLimit);
@@ -31,7 +33,7 @@ public class KanbanModelTests
         var cardId = Guid.NewGuid();
         var src = Guid.NewGuid();
         var tgt = Guid.NewGuid();
-        var args = new KanbanCardMovedEventArgs
+        var args = new KanbanCardMovedEventArgsModel
         {
             CardId = cardId,
             SourceColumnId = src,

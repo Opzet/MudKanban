@@ -1,5 +1,7 @@
-@using MudKanban.Models
 @using MudBlazor
+@using KanbanCardModel = MudKanban.Models.KanbanCard
+@using KanbanCardMovedEventArgsModel = MudKanban.Models.KanbanCardMovedEventArgs
+@using KanbanColumnModel = MudKanban.Models.KanbanColumn
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 
@@ -23,12 +25,12 @@
 </div>
 
 @code {
-    [Parameter] public List<KanbanColumn> Columns { get; set; } = new();
-    [Parameter] public List<KanbanCard> Items { get; set; } = new();
-    [Parameter] public RenderFragment<KanbanCard>? CardTemplate { get; set; }
-    [Parameter] public EventCallback<KanbanCardMovedEventArgs> ItemMoved { get; set; }
+    [Parameter] public List<KanbanColumnModel> Columns { get; set; } = new();
+    [Parameter] public List<KanbanCardModel> Items { get; set; } = new();
+    [Parameter] public RenderFragment<KanbanCardModel>? CardTemplate { get; set; }
+    [Parameter] public EventCallback<KanbanCardMovedEventArgsModel> ItemMoved { get; set; }
 
-    private KanbanCard? _dragging;
+    private KanbanCardModel? _dragging;
     private DotNetObjectReference<MudKanbanBoard>? _selfRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -40,7 +42,7 @@
         }
     }
 
-    private void HandleCardDragStart(KanbanCard card)
+    private void HandleCardDragStart(KanbanCardModel card)
     {
         _dragging = card;
     }
@@ -74,7 +76,7 @@
         for (int i = 0; i < targetCards.Count; i++)
             targetCards[i].Order = i;
 
-        var args = new KanbanCardMovedEventArgs
+        var args = new KanbanCardMovedEventArgsModel
         {
             CardId = _dragging.Id,
             SourceColumnId = sourceColumnId,

@@ -4,4 +4,6 @@
     <Project Path="src/MudKanban.Tests/MudKanban.Tests.csproj" />
     <Project Path="src/MudKanban/MudKanban.csproj" />
   </Folder>
+  <File Path=".github/workflows/build-test.yml" />
+  <File Path=".github/workflows/pack.yml" />
 </Solution>

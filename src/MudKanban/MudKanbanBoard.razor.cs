@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Components;
-using MudBlazor;
+using MudKanban.Models;
 
 namespace MudKanban;
 
@@ -34,74 +34,70 @@ public class MudKanbanBoardBase : ComponentBase
     [Parameter]
     public EventCallback<KanbanCardMovedEventArgs> OnCardMoved { get; set; }
 
-    /// <inheritdoc/>
+    /// <summary>Starts dragging a specific card.</summary>
     protected void HandleDragStart(KanbanCard card)
     {
+        ArgumentNullException.ThrowIfNull(card);
         _draggedCard = card;
     }
 
-    /// <inheritdoc/>
+    /// <summary>Keeps drop targets active while dragging.</summary>
     protected void HandleDragOver()
     {
         // Needed to allow drop; default prevented in markup.
     }
 
-    /// <inheritdoc/>
-    protected async Task HandleDrop(string targetColumnId)
+    /// <summary>Drops the currently dragged card to the target column.</summary>
+    protected async Task HandleDrop(Guid targetColumnId)
     {
-        if (_draggedCard == null || _draggedCard.ColumnId == targetColumnId)
+        if (_draggedCard is null || _draggedCard.ColumnId == targetColumnId)
         {
             _draggedCard = null;
             return;
         }
 
-        var previousColumnId = _draggedCard.ColumnId;
+        var draggedCardId = _draggedCard.Id;
+        var sourceColumnId = _draggedCard.ColumnId;
+
+        var sourceCards = Cards
+            .Where(c => c.ColumnId == sourceColumnId)
+            .OrderBy(c => c.Order)
+            .ToList();
+        sourceCards.RemoveAll(c => c.Id == draggedCardId);
+        for (var i = 0; i < sourceCards.Count; i++)
+        {
+            sourceCards[i].Order = i;
+        }
+
+        var targetCards = Cards
+            .Where(c => c.ColumnId == targetColumnId && c.Id != draggedCardId)
+            .OrderBy(c => c.Order)
+            .ToList();
+
+        var movedCard = Cards.First(c => c.Id == draggedCardId);
+        movedCard.ColumnId = targetColumnId;
+        targetCards.Add(movedCard);
+
+        for (var i = 0; i < targetCards.Count; i++)
+        {
+            targetCards[i].Order = i;
+        }
+
         var updatedCards = Cards
-            .Select(c => c.Id == _draggedCard.Id
-                ? new KanbanCard
-                {
-                    Id = c.Id,
-                    Title = c.Title,
-                    Description = c.Description,
-                    Assignee = c.Assignee,
-                    DueDate = c.DueDate,
-                    Priority = c.Priority,
-                    ColumnId = targetColumnId,
-                    Order = c.Order
-                }
+            .Select(c => c.Id == draggedCardId
+                ? movedCard
                 : c)
             .ToList();
 
         await CardsChanged.InvokeAsync(updatedCards);
-        await OnCardMoved.InvokeAsync(new KanbanCardMovedEventArgs(_draggedCard, previousColumnId, targetColumnId));
+        await OnCardMoved.InvokeAsync(new KanbanCardMovedEventArgs
+        {
+            CardId = draggedCardId,
+            SourceColumnId = sourceColumnId,
+            TargetColumnId = targetColumnId,
+            NewIndex = targetCards.Count - 1
+        });
 
         _draggedCard = null;
     }
-
-    /// <inheritdoc/>
-    protected static string GetPriorityClass(KanbanPriority priority) => priority switch
-    {
-        KanbanPriority.Critical => "mud-kanban-card--critical",
-        KanbanPriority.High => "mud-kanban-card--high",
-        KanbanPriority.Low => "mud-kanban-card--low",
-        _ => ""
-    };
-
-    /// <inheritdoc/>
-    protected static string GetPriorityIcon(KanbanPriority priority) => priority switch
-    {
-        KanbanPriority.Critical => Icons.Material.Filled.PriorityHigh,
-        KanbanPriority.High => Icons.Material.Filled.KeyboardArrowUp,
-        KanbanPriority.Low => Icons.Material.Filled.KeyboardArrowDown,
-        _ => Icons.Material.Filled.Remove
-    };
-
-    /// <inheritdoc/>
-    protected static Color GetPriorityColor(KanbanPriority priority) => priority switch
-    {
-        KanbanPriority.Critical => Color.Error,
-        KanbanPriority.High => Color.Warning,
-        KanbanPriority.Low => Color.Info,
-        _ => Color.Default
-    };
 }

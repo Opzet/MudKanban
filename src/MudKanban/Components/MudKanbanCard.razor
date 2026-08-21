@@ -1,5 +1,5 @@
-@using MudKanban.Models
 @using MudBlazor
+@using KanbanCardModel = MudKanban.Models.KanbanCard
 
 <div class="mud-kanban-card"
      draggable="true"
@@ -40,9 +40,9 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public KanbanCard Card { get; set; } = default!;
-    [Parameter] public RenderFragment<KanbanCard>? CardTemplate { get; set; }
-    [Parameter] public EventCallback<KanbanCard> OnDragStart { get; set; }
+    [Parameter, EditorRequired] public KanbanCardModel Card { get; set; } = default!;
+    [Parameter] public RenderFragment<KanbanCardModel>? CardTemplate { get; set; }
+    [Parameter] public EventCallback<KanbanCardModel> OnDragStart { get; set; }
 
     private string CardClass =>
         $"mud-kanban-card-inner border-l-4 border-{Card.Color}";

@@ -9,19 +9,29 @@
     <RootNamespace>MudKanban</RootNamespace>
 
     <PackageId>MudKanban</PackageId>
+    
     <Version>1.0.0</Version>
     <Authors>Opzet</Authors>
     <Company>Opzet</Company>
     <Title>MudKanban</Title>
+    
     <Description>Native MudBlazor Kanban board component library with drag-and-drop, WIP limits, and event callbacks.</Description>
+    
     <PackageTags>MudBlazor;Blazor;Kanban;DragAndDrop;Components</PackageTags>
+    
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
     <PackageProjectUrl>https://github.com/Opzet/MudKanban</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Opzet/MudKanban</RepositoryUrl>
+    
     <RepositoryType>git</RepositoryType>
+    
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <IncludeSymbols>true</IncludeSymbols>
+    
+  <IncludeSymbols>true</IncludeSymbols>
+  
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
@@ -31,8 +41,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.6" />
-    <PackageReference Include="MudBlazor" Version="8.15.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.*" />
+    <PackageReference Include="MudBlazor" Version="9.*" />
   </ItemGroup>
 
   <ItemGroup>

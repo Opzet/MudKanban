@@ -24,7 +24,7 @@
 
                 @foreach (var card in columnCards)
                 {
-                    <div class="mud-kanban-card @GetPriorityClass(card.Priority)"
+                    <div class="mud-kanban-card"
                          draggable="true"
                          @ondragstart="@(() => HandleDragStart(card))">
 
@@ -34,41 +34,30 @@
                         }
                         else
                         {
-                            <MudCard Elevation="2">
-                                <MudCardHeader>
-                                    <CardHeaderContent>
-                                        <MudText Typo="Typo.subtitle1">@card.Title</MudText>
-                                    </CardHeaderContent>
-                                    <CardHeaderActions>
-                                        <MudIcon Icon="@GetPriorityIcon(card.Priority)"
-                                                 Color="@GetPriorityColor(card.Priority)"
-                                                 Size="Size.Small" />
-                                    </CardHeaderActions>
-                                </MudCardHeader>
-                                @if (!string.IsNullOrEmpty(card.Description))
-                                {
-                                    <MudCardContent>
-                                        <MudText Typo="Typo.body2">@card.Description</MudText>
-                                    </MudCardContent>
-                                }
-                                @if (!string.IsNullOrEmpty(card.Assignee) || card.DueDate.HasValue)
-                                {
-                                    <MudCardContent Class="mud-kanban-card-footer">
-                                        @if (!string.IsNullOrEmpty(card.Assignee))
+                            <MudCard Elevation="2" Class="@($"mud-kanban-card-inner border-l-4 border-{card.Color}")">
+                                <MudCardContent Class="pa-2">
+                                    <MudText Typo="Typo.subtitle2" Class="mud-text-truncate">@card.Title</MudText>
+                                    @if (!string.IsNullOrWhiteSpace(card.Description))
+                                    {
+                                        <MudText Typo="Typo.body2" Class="mt-1 mud-text-secondary">@card.Description</MudText>
+                                    }
+                                    <div class="d-flex align-center gap-2 mt-2">
+                                        @if (!string.IsNullOrWhiteSpace(card.Assignee))
                                         {
-                                            <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Person">
-                                                @card.Assignee
-                                            </MudChip>
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Default"
+                                                     Icon="@Icons.Material.Filled.Person">@card.Assignee</MudChip>
                                         }
                                         @if (card.DueDate.HasValue)
                                         {
-                                            <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.CalendarToday"
-                                                     Color="@(card.DueDate < DateTimeOffset.Now ? Color.Error : Color.Default)">
+                                            var overdue = card.DueDate.Value.Date < DateTime.Today;
+                                            <MudChip T="string" Size="Size.Small"
+                                                     Color="@(overdue ? Color.Error : Color.Default)"
+                                                     Icon="@Icons.Material.Filled.CalendarToday">
                                                 @card.DueDate.Value.ToString("MMM d")
                                             </MudChip>
                                         }
-                                    </MudCardContent>
-                                }
+                                    </div>
+                                </MudCardContent>
                             </MudCard>
                         }
                     </div>

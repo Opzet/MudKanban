@@ -2,10 +2,12 @@ using Bunit;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
 using MudBlazor.Services;
-using MudKanban.Components;
-using MudKanban.Models;
 using Microsoft.AspNetCore.Components;
 using Xunit;
+using KanbanBoardComponent = MudKanban.Components.MudKanbanBoard;
+using KanbanCardModel = MudKanban.Models.KanbanCard;
+using KanbanCardMovedEventArgsModel = MudKanban.Models.KanbanCardMovedEventArgs;
+using KanbanColumnModel = MudKanban.Models.KanbanColumn;
 
 namespace MudKanban.Tests;
 
@@ -17,17 +19,17 @@ public class KanbanBoardComponentTests : TestContext
         JSInterop.Mode = JSRuntimeMode.Loose;
     }
 
-    private (List<KanbanColumn> columns, List<KanbanCard> cards) CreateSampleData()
+    private (List<KanbanColumnModel> columns, List<KanbanCardModel> cards) CreateSampleData()
     {
-        var col1 = new KanbanColumn { Title = "To Do", Order = 0 };
-        var col2 = new KanbanColumn { Title = "Done", Order = 1 };
-        var cards = new List<KanbanCard>
+        var col1 = new KanbanColumnModel { Title = "To Do", Order = 0 };
+        var col2 = new KanbanColumnModel { Title = "Done", Order = 1 };
+        var cards = new List<KanbanCardModel>
         {
             new() { Title = "Card A", ColumnId = col1.Id, Order = 0 },
             new() { Title = "Card B", ColumnId = col1.Id, Order = 1 },
             new() { Title = "Card C", ColumnId = col2.Id, Order = 0 },
         };
-        return (new List<KanbanColumn> { col1, col2 }, cards);
+        return (new List<KanbanColumnModel> { col1, col2 }, cards);
     }
 
     [Fact]
@@ -35,7 +37,7 @@ public class KanbanBoardComponentTests : TestContext
     {
         var (cols, cards) = CreateSampleData();
 
-        var cut = RenderComponent<MudKanbanBoard>(p => p
+        var cut = RenderComponent<KanbanBoardComponent>(p => p
             .Add(b => b.Columns, cols)
             .Add(b => b.Items, cards));
 
@@ -49,7 +51,7 @@ public class KanbanBoardComponentTests : TestContext
     {
         var (cols, cards) = CreateSampleData();
 
-        var cut = RenderComponent<MudKanbanBoard>(p => p
+        var cut = RenderComponent<KanbanBoardComponent>(p => p
             .Add(b => b.Columns, cols)
             .Add(b => b.Items, cards));
 
@@ -64,10 +66,10 @@ public class KanbanBoardComponentTests : TestContext
     {
         var (cols, cards) = CreateSampleData();
 
-        var cut = RenderComponent<MudKanbanBoard>(p => p
+        var cut = RenderComponent<KanbanBoardComponent>(p => p
             .Add(b => b.Columns, cols)
             .Add(b => b.Items, cards)
-            .Add<KanbanCard>(b => b.CardTemplate, card =>
+            .Add<KanbanCardModel>(b => b.CardTemplate, card =>
                 $"<div class=\"custom-card\">{card.Title}</div>"));
 
         var markup = cut.Markup;
@@ -78,15 +80,15 @@ public class KanbanBoardComponentTests : TestContext
     [Fact]
     public void Column_ShowsWipWarning_WhenExceeded()
     {
-        var col = new KanbanColumn { Title = "WIP Col", Order = 0, WipLimit = 1 };
-        var cards = new List<KanbanCard>
+        var col = new KanbanColumnModel { Title = "WIP Col", Order = 0, WipLimit = 1 };
+        var cards = new List<KanbanCardModel>
         {
             new() { Title = "C1", ColumnId = col.Id, Order = 0 },
             new() { Title = "C2", ColumnId = col.Id, Order = 1 }, // exceeds limit
         };
 
-        var cut = RenderComponent<MudKanbanBoard>(p => p
-            .Add(b => b.Columns, new List<KanbanColumn> { col })
+        var cut = RenderComponent<KanbanBoardComponent>(p => p
+            .Add(b => b.Columns, new List<KanbanColumnModel> { col })
             .Add(b => b.Items, cards));
 
         // WIP exceeded class or warning chip should be rendered
@@ -99,9 +101,9 @@ public class KanbanBoardComponentTests : TestContext
     public async Task Board_InvokesItemMoved_OnDrop()
     {
         var (cols, cards) = CreateSampleData();
-        KanbanCardMovedEventArgs? received = null;
+        KanbanCardMovedEventArgsModel? received = null;
 
-        var cut = RenderComponent<MudKanbanBoard>(p => p
+        var cut = RenderComponent<KanbanBoardComponent>(p => p
             .Add(b => b.Columns, cols)
             .Add(b => b.Items, cards)
             .Add(b => b.ItemMoved, args => { received = args; }));
