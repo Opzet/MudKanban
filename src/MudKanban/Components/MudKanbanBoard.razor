@@ -1,0 +1,114 @@
+@using MudKanban.Models
+@using MudBlazor
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="mud-kanban-board d-flex flex-row gap-3 overflow-x-auto pa-3"
+     style="min-height:400px;">
+    @foreach (var column in Columns.OrderBy(c => c.Order))
+    {
+        var columnCards = Items
+            .Where(c => c.ColumnId == column.Id)
+            .OrderBy(c => c.Order)
+            .ToList();
+
+        <div class="mud-kanban-column-wrapper" style="min-width:280px; max-width:320px; flex:0 0 auto;">
+            <MudKanbanColumn Column="column"
+                             Cards="columnCards"
+                             CardTemplate="CardTemplate"
+                             OnCardDragStart="HandleCardDragStart"
+                             OnDrop="HandleDrop" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<KanbanColumn> Columns { get; set; } = new();
+    [Parameter] public List<KanbanCard> Items { get; set; } = new();
+    [Parameter] public RenderFragment<KanbanCard>? CardTemplate { get; set; }
+    [Parameter] public EventCallback<KanbanCardMovedEventArgs> ItemMoved { get; set; }
+
+    private KanbanCard? _dragging;
+    private DotNetObjectReference<MudKanbanBoard>? _selfRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("MudKanban.init", _selfRef);
+        }
+    }
+
+    private void HandleCardDragStart(KanbanCard card)
+    {
+        _dragging = card;
+    }
+
+    private async Task HandleDrop((Guid ColumnId, int Index) target)
+    {
+        if (_dragging is null) return;
+
+        var sourceColumnId = _dragging.ColumnId;
+        var targetColumnId = target.ColumnId;
+        var newIndex = target.Index;
+
+        // Remove from source
+        var sourceCards = Items
+            .Where(c => c.ColumnId == sourceColumnId)
+            .OrderBy(c => c.Order)
+            .ToList();
+        sourceCards.Remove(_dragging);
+        for (int i = 0; i < sourceCards.Count; i++)
+            sourceCards[i].Order = i;
+
+        // Insert into target
+        var targetCards = Items
+            .Where(c => c.ColumnId == targetColumnId && c.Id != _dragging.Id)
+            .OrderBy(c => c.Order)
+            .ToList();
+
+        newIndex = Math.Clamp(newIndex, 0, targetCards.Count);
+        targetCards.Insert(newIndex, _dragging);
+        _dragging.ColumnId = targetColumnId;
+        for (int i = 0; i < targetCards.Count; i++)
+            targetCards[i].Order = i;
+
+        var args = new KanbanCardMovedEventArgs
+        {
+            CardId = _dragging.Id,
+            SourceColumnId = sourceColumnId,
+            TargetColumnId = targetColumnId,
+            NewIndex = newIndex
+        };
+
+        _dragging = null;
+        await ItemMoved.InvokeAsync(args);
+        StateHasChanged();
+    }
+
+    /// <summary>Called from JS when a card is dropped (alternative JS-driven path).</summary>
+    [JSInvokable]
+    public async Task OnCardDropped(string cardId, string sourceColumnId, string targetColumnId, int newIndex)
+    {
+        if (!Guid.TryParse(cardId, out var cid) ||
+            !Guid.TryParse(sourceColumnId, out _) ||
+            !Guid.TryParse(targetColumnId, out var tgt))
+            return;
+
+        _dragging = Items.FirstOrDefault(c => c.Id == cid);
+        if (_dragging is null) return;
+
+        await HandleDrop((tgt, newIndex));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("MudKanban.dispose");
+        }
+        catch { /* ignore if JS runtime already gone */ }
+        _selfRef?.Dispose();
+    }
+}

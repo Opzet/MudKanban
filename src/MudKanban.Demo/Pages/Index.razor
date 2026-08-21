@@ -1,0 +1,105 @@
+@page "/"
+
+<PageTitle>MudKanban Demo</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">Kanban Board Demo</MudText>
+<MudText Typo="Typo.body1" Class="mb-4">
+    Drag cards between columns. The <b>In Progress</b> column has a WIP limit of 2.
+    The <b>Done</b> column uses a custom card template.
+</MudText>
+
+@if (_lastMoved is not null)
+{
+    <MudAlert Severity="Severity.Info" Class="mb-3">
+        Card "<b>@_lastMoved!.Value.CardTitle</b>" moved to <b>@_lastMoved!.Value.TargetColumn</b> at index @_lastMoved!.Value.NewIndex.
+    </MudAlert>
+}
+
+<MudKanbanBoard Columns="_columns"
+                Items="_cards"
+                ItemMoved="OnItemMoved">
+    <CardTemplate Context="card">
+        @if (card.ColumnId == _doneColumnId)
+        {
+            <MudCard Elevation="1" Style="border-left:4px solid var(--mud-palette-success);">
+                <MudCardContent Class="pa-2">
+                    <MudText Typo="Typo.subtitle2">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" />
+                        @card.Title
+                    </MudText>
+                    @if (!string.IsNullOrEmpty(card.Assignee))
+                    {
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@card.Assignee</MudText>
+                    }
+                </MudCardContent>
+            </MudCard>
+        }
+        else
+        {
+            <MudCard Elevation="2" Style="@($"border-left:4px solid var(--mud-palette-{card.Color})")">
+                <MudCardContent Class="pa-2">
+                    <MudText Typo="Typo.subtitle2">@card.Title</MudText>
+                    @if (!string.IsNullOrEmpty(card.Description))
+                    {
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary">@card.Description</MudText>
+                    }
+                    <div class="d-flex gap-2 mt-1">
+                        @if (!string.IsNullOrEmpty(card.Assignee))
+                        {
+                            <MudChip T="string" Size="Size.Small" Icon="@Icons.Material.Filled.Person">@card.Assignee</MudChip>
+                        }
+                        @if (card.DueDate.HasValue)
+                        {
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@(card.DueDate.Value < DateTime.Today ? Color.Error : Color.Default)"
+                                     Icon="@Icons.Material.Filled.CalendarToday">
+                                @card.DueDate.Value.ToString("MMM d")
+                            </MudChip>
+                        }
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        }
+    </CardTemplate>
+</MudKanbanBoard>
+
+@code {
+    private List<KanbanColumn> _columns = new();
+    private List<KanbanCard> _cards = new();
+    private Guid _doneColumnId;
+
+    private (string CardTitle, string TargetColumn, int NewIndex)? _lastMoved;
+
+    protected override void OnInitialized()
+    {
+        var todo = new KanbanColumn { Title = "To Do", Order = 0 };
+        var progress = new KanbanColumn { Title = "In Progress", Order = 1, WipLimit = 2 };
+        var review = new KanbanColumn { Title = "Review", Order = 2 };
+        var done = new KanbanColumn { Title = "Done", Order = 3 };
+        _doneColumnId = done.Id;
+
+        _columns = new() { todo, progress, review, done };
+
+        _cards = new()
+        {
+            new KanbanCard { Title = "Set up project", Description = "Initialize repo and solution", ColumnId = todo.Id, Order = 0, Assignee = "Alice", Color = "primary" },
+            new KanbanCard { Title = "Design data models", Description = "KanbanCard, KanbanColumn", ColumnId = todo.Id, Order = 1, Assignee = "Bob", Color = "secondary" },
+            new KanbanCard { Title = "Build MudKanbanBoard", Description = "Core board component", ColumnId = progress.Id, Order = 0, Assignee = "Alice", DueDate = DateTime.Today.AddDays(2), Color = "info" },
+            new KanbanCard { Title = "Add drag-and-drop", Description = "HTML5 DnD interop", ColumnId = progress.Id, Order = 1, DueDate = DateTime.Today.AddDays(-1), Color = "warning" },
+            new KanbanCard { Title = "Write bUnit tests", ColumnId = review.Id, Order = 0, Assignee = "Charlie", Color = "secondary" },
+            new KanbanCard { Title = "Update README", ColumnId = done.Id, Order = 0, Color = "success" },
+            new KanbanCard { Title = "Publish NuGet", ColumnId = done.Id, Order = 1, Color = "success" },
+        };
+    }
+
+    private async Task OnItemMoved(KanbanCardMovedEventArgs args)
+    {
+        var card = _cards.FirstOrDefault(c => c.Id == args.CardId);
+        var col = _columns.FirstOrDefault(c => c.Id == args.TargetColumnId);
+        if (card is not null && col is not null)
+        {
+            _lastMoved = (card.Title, col.Title, args.NewIndex);
+        }
+        await Task.CompletedTask;
+    }
+}
