@@ -1,0 +1,47 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>MudKanban Demo</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">MudKanban Demo</MudText>
+<MudText Typo="Typo.body1" Class="mb-4">
+    Drag and drop cards between columns. WIP limits are enforced per column.
+</MudText>
+
+<MudKanbanBoard Columns="@_columns"
+                @bind-Cards="@_cards"
+                OnCardMoved="@OnCardMoved" />
+
+@if (_lastEvent is not null)
+{
+    <MudAlert Severity="Severity.Info" Class="mt-4">@_lastEvent</MudAlert>
+}
+
+@code {
+    private string? _lastEvent;
+
+    private IReadOnlyList<KanbanColumn> _columns =
+    [
+        new KanbanColumn { Id = "backlog",     Title = "Backlog",     Order = 0 },
+        new KanbanColumn { Id = "todo",        Title = "To Do",       Order = 1, WipLimit = 3 },
+        new KanbanColumn { Id = "inprogress",  Title = "In Progress", Order = 2, WipLimit = 2 },
+        new KanbanColumn { Id = "review",      Title = "Review",      Order = 3, WipLimit = 2 },
+        new KanbanColumn { Id = "done",        Title = "Done",        Order = 4 },
+    ];
+
+    private IReadOnlyList<KanbanCard> _cards =
+    [
+        new KanbanCard { Title = "Design system setup",   ColumnId = "done",       Order = 0, Priority = KanbanPriority.Normal },
+        new KanbanCard { Title = "API integration",       ColumnId = "inprogress", Order = 0, Priority = KanbanPriority.High, Assignee = "Alice", DueDate = DateTimeOffset.Now.AddDays(2) },
+        new KanbanCard { Title = "Write unit tests",      ColumnId = "todo",       Order = 0, Priority = KanbanPriority.Normal, Assignee = "Bob" },
+        new KanbanCard { Title = "Fix login bug",         ColumnId = "review",     Order = 0, Priority = KanbanPriority.Critical, DueDate = DateTimeOffset.Now.AddDays(-1) },
+        new KanbanCard { Title = "Accessibility audit",   ColumnId = "backlog",    Order = 0, Priority = KanbanPriority.Low },
+        new KanbanCard { Title = "Performance profiling", ColumnId = "backlog",    Order = 1, Priority = KanbanPriority.Normal },
+        new KanbanCard { Title = "Release notes",         ColumnId = "todo",       Order = 1, Priority = KanbanPriority.Low },
+    ];
+
+    private void OnCardMoved(KanbanCardMovedEventArgs args)
+    {
+        _lastEvent = $"Card \"{args.Card.Title}\" moved from \"{args.FromColumnId}\" to \"{args.ToColumnId}\"";
+    }
+}

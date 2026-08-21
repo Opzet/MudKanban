@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="MudKanban.Tests/MudKanban.Tests.csproj" />
+  <Project Path="MudKanban/MudKanban.csproj" />
+  <Project Path="MudKanbanDemoApp.Web/MudKanbanDemoApp.Web.csproj" />
+</Solution>
