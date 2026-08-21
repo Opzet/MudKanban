@@ -1,0 +1,75 @@
+@using MudKanban.Models
+@using MudBlazor
+
+<div class="mud-kanban-column d-flex flex-column"
+     @ondragover:preventDefault="true"
+     @ondrop="HandleDrop">
+    <MudPaper Elevation="0" Class="mud-kanban-column-header pa-3 d-flex align-center justify-space-between">
+        <MudText Typo="Typo.h6">@Column.Title</MudText>
+        <div class="d-flex align-center gap-2">
+            @if (Column.WipLimit.HasValue)
+            {
+                var count = Cards.Count;
+                var exceeded = count > Column.WipLimit.Value;
+                <MudChip T="string"
+                         Size="Size.Small"
+                         Color="@(exceeded ? Color.Error : Color.Default)"
+                         Variant="@(exceeded ? Variant.Filled : Variant.Outlined)"
+                         Icon="@(exceeded ? Icons.Material.Filled.Warning : null)"
+                         title="@(exceeded ? $"WIP limit exceeded ({count}/{Column.WipLimit.Value})" : null)">
+                    @count / @Column.WipLimit.Value
+                </MudChip>
+            }
+            else
+            {
+                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">@Cards.Count</MudChip>
+            }
+        </div>
+    </MudPaper>
+
+    <MudPaper Elevation="0"
+              Class="@ColumnBodyClass"
+              Style="min-height:120px; overflow-y:auto;">
+        @foreach (var card in Cards.OrderBy(c => c.Order))
+        {
+            <div class="mud-kanban-drop-zone"
+                 @ondragover:preventDefault="true"
+                 @ondrop="() => HandleDropAtIndex(Cards.OrderBy(c => c.Order).ToList().IndexOf(card))">
+                <MudKanbanCard Card="card"
+                               CardTemplate="CardTemplate"
+                               OnDragStart="OnCardDragStart" />
+            </div>
+        }
+        @* Drop zone at end of column *@
+        <div class="mud-kanban-drop-zone mud-kanban-drop-zone-empty"
+             style="min-height:60px;"
+             @ondragover:preventDefault="true"
+             @ondrop="() => HandleDropAtIndex(Cards.Count)">
+        </div>
+    </MudPaper>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public KanbanColumn Column { get; set; } = default!;
+    [Parameter] public List<KanbanCard> Cards { get; set; } = new();
+    [Parameter] public RenderFragment<KanbanCard>? CardTemplate { get; set; }
+    [Parameter] public EventCallback<KanbanCard> OnCardDragStart { get; set; }
+    [Parameter] public EventCallback<(Guid ColumnId, int Index)> OnDrop { get; set; }
+
+    private bool WipExceeded =>
+        Column.WipLimit.HasValue && Cards.Count > Column.WipLimit.Value;
+
+    private string ColumnBodyClass =>
+        "mud-kanban-column-body flex-grow-1 pa-2 d-flex flex-column gap-2" +
+        (WipExceeded ? " mud-kanban-wip-exceeded" : string.Empty);
+
+    private async Task HandleDrop()
+    {
+        await OnDrop.InvokeAsync((Column.Id, Cards.Count));
+    }
+
+    private async Task HandleDropAtIndex(int index)
+    {
+        await OnDrop.InvokeAsync((Column.Id, index));
+    }
+}
