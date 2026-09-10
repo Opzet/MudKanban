@@ -29,4 +29,9 @@ public class KanbanCard
     /// "success", "warning", "error", "info", "default").
     /// </summary>
     public string Color { get; set; } = "default";
+
+    /// <summary>
+    /// Optional per-card actions rendered in the card action menu.
+    /// </summary>
+    public List<KanbanCardAction> Actions { get; set; } = [];
 }

@@ -36,6 +36,14 @@ public class MudKanbanBoardBase : ComponentBase
     [Parameter]
     public EventCallback<KanbanCardMovedEventArgs> OnCardMoved { get; set; }
 
+    /// <summary>Raised when a card action is selected from a card menu.</summary>
+    [Parameter]
+    public EventCallback<KanbanCardActionEventArgs> OnCardAction { get; set; }
+
+    /// <summary>Disables drag-and-drop interactions while keeping card actions available.</summary>
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
     /// <summary>True when any card is currently being dragged.</summary>
     protected bool IsDragging => _draggedCard is not null;
 
@@ -43,6 +51,11 @@ public class MudKanbanBoardBase : ComponentBase
     protected void HandleDragStart(KanbanCard card)
     {
         ArgumentNullException.ThrowIfNull(card);
+
+        if (ReadOnly)
+        {
+            return;
+        }
 
         _draggedCard = card;
         _dragOverColumnId = card.ColumnId;
@@ -64,7 +77,7 @@ public class MudKanbanBoardBase : ComponentBase
     /// <summary>Tracks the active drop zone index while dragging over a column.</summary>
     protected void HandleDropZoneEnter(Guid columnId, int index)
     {
-        if (_draggedCard is null)
+        if (ReadOnly || _draggedCard is null)
         {
             return;
         }
@@ -118,7 +131,7 @@ public class MudKanbanBoardBase : ComponentBase
     /// <summary>Drops the currently dragged card to the target column and index.</summary>
     protected async Task HandleDrop(Guid targetColumnId, int targetIndex)
     {
-        if (_draggedCard is null)
+        if (ReadOnly || _draggedCard is null)
         {
             ResetDragState();
             return;
@@ -174,6 +187,19 @@ public class MudKanbanBoardBase : ComponentBase
     protected bool IsDraggedCard(Guid cardId)
     {
         return _draggedCard?.Id == cardId;
+    }
+
+    /// <summary>Invokes the configured action callback for a selected card action.</summary>
+    protected Task HandleCardActionAsync(KanbanCard card, KanbanCardAction action)
+    {
+        ArgumentNullException.ThrowIfNull(card);
+        ArgumentNullException.ThrowIfNull(action);
+
+        return OnCardAction.InvokeAsync(new KanbanCardActionEventArgs
+        {
+            Card = card,
+            Action = action
+        });
     }
 
     private void ResetDragState()

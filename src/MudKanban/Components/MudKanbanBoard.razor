@@ -1,6 +1,7 @@
 @using MudBlazor
 @using KanbanCardModel = MudKanban.Models.KanbanCard
 @using KanbanCardMovedEventArgsModel = MudKanban.Models.KanbanCardMovedEventArgs
+@using KanbanCardActionEventArgsModel = MudKanban.Models.KanbanCardActionEventArgs
 @using KanbanColumnModel = MudKanban.Models.KanbanColumn
 @implements IAsyncDisposable
 @inject IJSRuntime JS
@@ -19,6 +20,7 @@
                              Cards="columnCards"
                              CardTemplate="CardTemplate"
                              OnCardDragStart="HandleCardDragStart"
+                             OnCardAction="OnCardAction"
                              OnDrop="HandleDrop" />
         </div>
     }
@@ -29,6 +31,7 @@
     [Parameter] public List<KanbanCardModel> Items { get; set; } = new();
     [Parameter] public RenderFragment<KanbanCardModel>? CardTemplate { get; set; }
     [Parameter] public EventCallback<KanbanCardMovedEventArgsModel> ItemMoved { get; set; }
+    [Parameter] public EventCallback<KanbanCardActionEventArgsModel> OnCardAction { get; set; }
 
     private KanbanCardModel? _dragging;
     private DotNetObjectReference<MudKanbanBoard>? _selfRef;

@@ -1,5 +1,6 @@
 @using MudBlazor
 @using KanbanCardModel = MudKanban.Models.KanbanCard
+@using KanbanCardActionEventArgsModel = MudKanban.Models.KanbanCardActionEventArgs
 @using KanbanColumnModel = MudKanban.Models.KanbanColumn
 
 <div class="mud-kanban-column d-flex flex-column"
@@ -38,7 +39,8 @@
                  @ondrop="() => HandleDropAtIndex(Cards.OrderBy(c => c.Order).ToList().IndexOf(card))">
                 <MudKanbanCard Card="card"
                                CardTemplate="CardTemplate"
-                               OnDragStart="OnCardDragStart" />
+                               OnDragStart="OnCardDragStart"
+                               OnCardAction="OnCardAction" />
             </div>
         }
         @* Drop zone at end of column *@
@@ -55,6 +57,7 @@
     [Parameter] public List<KanbanCardModel> Cards { get; set; } = new();
     [Parameter] public RenderFragment<KanbanCardModel>? CardTemplate { get; set; }
     [Parameter] public EventCallback<KanbanCardModel> OnCardDragStart { get; set; }
+    [Parameter] public EventCallback<KanbanCardActionEventArgsModel> OnCardAction { get; set; }
     [Parameter] public EventCallback<(Guid ColumnId, int Index)> OnDrop { get; set; }
 
     private bool WipExceeded =>

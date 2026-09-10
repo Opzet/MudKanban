@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.Components.Web
 @inherits MudKanbanBoardBase
 
 <div class="mud-kanban-board" role="list">
@@ -9,7 +10,7 @@
 
         var isActiveDropColumn = IsColumnDropTarget(column.Id);
 
-        <MudPaper Class="@($"mud-kanban-column {(isOverLimit ? "mud-kanban-column--over-limit" : string.Empty)} {(IsDragging ? "mud-kanban-column--drag-active" : string.Empty)} {(isActiveDropColumn ? "mud-kanban-column--drop-focus" : string.Empty)}")" Outlined="true" Elevation="0">
+        <MudPaper Class="@($"mud-kanban-column {(isOverLimit ? "mud-kanban-column--over-limit" : string.Empty)} {(IsDragging ? "mud-kanban-column--drag-active" : string.Empty)} {(isActiveDropColumn ? "mud-kanban-column--drop-focus" : string.Empty)} {(ReadOnly ? "mud-kanban-column--readonly" : string.Empty)}")" Outlined="true" Elevation="0">
             <div class="mud-kanban-column-header">
                 <div class="mud-kanban-column-title-wrap">
                     <MudText Typo="Typo.h6" Class="mud-kanban-column-title">@column.Title</MudText>
@@ -60,7 +61,7 @@
 
                         <div class="@($"mud-kanban-card {(IsDraggedCard(card.Id) ? "mud-kanban-card--dragging" : string.Empty)} {(IsCardBumped(column.Id, index) ? "mud-kanban-card--bumped" : string.Empty)}")"
                              role="listitem"
-                             draggable="true"
+                             draggable="@(!ReadOnly)"
                              @ondragstart="@(() => HandleDragStart(card))"
                              @ondragenter="@(() => HandleDropZoneEnter(column.Id, index))"
                              @ondragenter:preventDefault="true"
@@ -79,7 +80,27 @@
                                     <MudCardContent Class="pa-3">
                                         <div class="d-flex align-start justify-space-between gap-2">
                                             <MudText Typo="Typo.subtitle2" Class="mud-text-truncate">@card.Title</MudText>
-                                            <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Size="Size.Small" Class="mud-kanban-drag-icon" />
+                                            <div class="d-flex align-center gap-1">
+                                                @if (card.Actions.Count > 0)
+                                                {
+                                                    <MudMenu Dense="true" Icon="@Icons.Material.Filled.MoreVert" AriaLabel="Card actions">
+                                                        @foreach (var action in card.Actions)
+                                                        {
+                                                            <MudMenuItem Disabled="action.Disabled" OnClick="@((MouseEventArgs _) => HandleCardActionAsync(card, action))">
+                                                                <MudIcon Icon="@(string.IsNullOrWhiteSpace(action.Icon) ? Icons.Material.Filled.Circle : action.Icon)"
+                                                                         Class="me-2"
+                                                                         Color="@action.Color"
+                                                                         Size="Size.Small" />
+                                                                @action.Label
+                                                            </MudMenuItem>
+                                                        }
+                                                    </MudMenu>
+                                                }
+                                                @if (!ReadOnly)
+                                                {
+                                                    <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Size="Size.Small" Class="mud-kanban-drag-icon" />
+                                                }
+                                            </div>
                                         </div>
                                         @if (!string.IsNullOrWhiteSpace(card.Description))
                                         {
@@ -112,7 +133,7 @@
                 @if (renderableCards.Count == 0 && !IsDragging)
                 {
                     <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Text" Class="mud-kanban-empty-state">
-                        Drop cards here
+                        @(ReadOnly ? "No cards" : "Drop cards here")
                     </MudAlert>
                 }
             </div>
