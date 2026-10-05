@@ -30,5 +30,5 @@ public class KanbanCardAction
     /// <summary>
     /// Disables selection when true.
     /// </summary>
-    public bool Disabled { get; set; }
+    public bool Disabled { get; set; } = false;
 }
